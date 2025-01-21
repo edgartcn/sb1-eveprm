@@ -12,6 +12,7 @@ export function ClientManagement() {
   const { setSelectedClient } = useClient();
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClientEdit, setSelectedClientEdit] = useState<Client | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -29,9 +30,34 @@ export function ClientManagement() {
     notes: '',
   });
 
+  const fetchClients = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      if (!user?.id) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      const { data, error: fetchError } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name');
+
+      if (fetchError) throw fetchError;
+      setClients(data || []);
+    } catch (err) {
+      console.error('Error fetching clients:', err);
+      setError('Não foi possível carregar a lista de clientes');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchClients();
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     if (selectedClientEdit) {
@@ -53,27 +79,11 @@ export function ClientManagement() {
     }
   }, [selectedClientEdit]);
 
-  const fetchClients = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-      setClients(data || []);
-    } catch (error) {
-      console.error('Error fetching clients:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       if (!user?.id) {
-        throw new Error('User not authenticated');
+        throw new Error('Usuário não autenticado');
       }
 
       if (selectedClientEdit) {
@@ -95,11 +105,12 @@ export function ClientManagement() {
         if (error) throw error;
       }
 
-      fetchClients();
+      await fetchClients();
       setSelectedClientEdit(null);
       setIsEditing(false);
     } catch (error) {
       console.error('Error saving client:', error);
+      setError('Erro ao salvar cliente');
     }
   };
 
@@ -108,7 +119,7 @@ export function ClientManagement() {
 
     try {
       if (!user?.id) {
-        throw new Error('User not authenticated');
+        throw new Error('Usuário não autenticado');
       }
 
       const { error } = await supabase
@@ -118,9 +129,10 @@ export function ClientManagement() {
         .eq('user_id', user.id);
 
       if (error) throw error;
-      fetchClients();
+      await fetchClients();
     } catch (error) {
       console.error('Error deleting client:', error);
+      setError('Erro ao excluir cliente');
     }
   };
 
@@ -134,6 +146,25 @@ export function ClientManagement() {
     client.cpf?.includes(searchTerm) ||
     client.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-white p-8 rounded-lg shadow-md">
+          <div className="flex items-center text-red-600 mb-4">
+            <AlertCircle className="w-6 h-6 mr-2" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={fetchClients}
+            className="w-full px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -348,13 +379,16 @@ export function ClientManagement() {
                     {isLoading ? (
                       <tr>
                         <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                          Carregando...
+                          <div className="flex items-center justify-center">
+                            <div className="animate-spin w-5 h-5 border-2 border-blue-900 border-t-transparent rounded-full mr-2"></div>
+                            Carregando clientes...
+                          </div>
                         </td>
                       </tr>
                     ) : filteredClients.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                          Nenhum cliente encontrado
+                          {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
                         </td>
                       </tr>
                     ) : (

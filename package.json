@@ -12,7 +12,10 @@
     "test:cnis": "vitest src/services/cnis/__tests__/processor.test.ts"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.3.4",
     "@supabase/supabase-js": "^2.39.7",
+    "@tanstack/react-query": "^5.18.1",
+    "@tanstack/react-query-devtools": "^5.18.1",
     "@tiptap/extension-document": "^2.2.4",
     "@tiptap/extension-paragraph": "^2.2.4",
     "@tiptap/extension-text": "^2.2.4",
@@ -20,9 +23,12 @@
     "@tiptap/react": "^2.2.4",
     "@tiptap/starter-kit": "^2.2.4",
     "lucide-react": "^0.344.0",
-    "pdfjs-dist": "^4.0.379",
+    "pdfjs-dist": "3.11.174",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-hook-form": "^7.50.0",
+    "zod": "^3.22.4",
+    "zustand": "^4.5.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.55",

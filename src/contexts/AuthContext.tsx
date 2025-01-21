@@ -1,82 +1,50 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { AuthState, User } from '../types/auth';
+import React, { createContext, useContext, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../lib/store';
 
-interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<{ login: (email: string, password: string) => Promise<void> } | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    isAuthenticated: false,
-  });
+  const { setUser, logout } = useAuthStore();
 
   useEffect(() => {
     // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setAuthState({
-          user: {
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const profile = await fetchUserProfile(session.user.id);
+          setUser({
             id: session.user.id,
             email: session.user.email!,
-            name: '', // Will be updated when profile is fetched
-          },
-          isAuthenticated: true,
-        });
-        fetchUserProfile(session.user.id);
+            name: profile?.name || session.user.email!.split('@')[0],
+          });
+        }
+      } catch (error) {
+        console.error('Error checking auth session:', error);
       }
-    });
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        setAuthState({
-          user: {
-            id: session.user.id,
-            email: session.user.email!,
-            name: '', // Will be updated when profile is fetched
-          },
-          isAuthenticated: true,
+        const profile = await fetchUserProfile(session.user.id);
+        setUser({
+          id: session.user.id,
+          email: session.user.email!,
+          name: profile?.name || session.user.email!.split('@')[0],
         });
-        fetchUserProfile(session.user.id);
       } else {
-        setAuthState({ user: null, isAuthenticated: false });
+        logout();
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('name')
-        .eq('id', userId)
-        .maybeSingle(); // Use maybeSingle instead of single to handle null case
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return;
-      }
-
-      setAuthState((current) => ({
-        ...current,
-        user: current.user ? { 
-          ...current.user, 
-          name: profile?.name || current.user.email?.split('@')[0] || 'Usuário'
-        } : null,
-      }));
-    } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
-    }
-  };
+  }, [setUser, logout]);
 
   const login = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -86,21 +54,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (error) throw error;
     if (!data.user) throw new Error('No user data returned');
-
-    // Auth state will be updated by the listener
-  };
-
-  const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    // Auth state will be updated by the listener
   };
 
   return (
-    <AuthContext.Provider value={{ ...authState, login, logout }}>
+    <AuthContext.Provider value={{ login }}>
       {children}
     </AuthContext.Provider>
   );
+}
+
+async function fetchUserProfile(userId: string) {
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('name')
+      .eq('id', userId)
+      .maybeSingle();
+
+    return profile;
+  } catch (error) {
+    console.error('Error in fetchUserProfile:', error);
+    return null;
+  }
 }
 
 export const useAuth = () => {

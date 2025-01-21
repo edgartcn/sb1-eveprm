@@ -1,39 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, User, Search } from 'lucide-react';
-import { useClient } from '../contexts/ClientContext';
-import { supabase } from '../lib/supabase';
-import { Client } from '../types/client';
+import { ChevronDown, User, Search, AlertCircle } from 'lucide-react';
+import { useClientStore } from '../lib/store';
+import { useClients } from '../lib/queries';
 
 export function ClientSwitcher() {
-  const { selectedClient, setSelectedClient } = useClient();
+  const { selectedClient, setSelectedClient } = useClientStore();
   const [isOpen, setIsOpen] = useState(false);
-  const [clients, setClients] = useState<Client[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const fetchClients = async () => {
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('clients')
-          .select('*')
-          .order('name');
-
-        if (error) throw error;
-        setClients(data || []);
-      } catch (error) {
-        console.error('Error fetching clients:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (isOpen) {
-      fetchClients();
-    }
-  }, [isOpen]);
+  const { data: clients, isLoading, error, refetch } = useClients();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -46,10 +22,11 @@ export function ClientSwitcher() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const filteredClients = clients.filter(client =>
+  const filteredClients = clients?.filter(client =>
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    client.cpf?.includes(searchTerm)
-  );
+    client.cpf?.includes(searchTerm) ||
+    client.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  ) ?? [];
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -81,9 +58,27 @@ export function ClientSwitcher() {
 
           <div className="max-h-64 overflow-y-auto">
             {isLoading ? (
-              <div className="p-4 text-center text-gray-500">Carregando...</div>
+              <div className="p-4 text-center text-gray-500">
+                <div className="animate-spin w-5 h-5 border-2 border-blue-900 border-t-transparent rounded-full mx-auto mb-2"></div>
+                Carregando clientes...
+              </div>
+            ) : error ? (
+              <div className="p-4">
+                <div className="flex items-center justify-center text-red-600 mb-2">
+                  <AlertCircle className="w-5 h-5 mr-2" />
+                  <span>Erro ao carregar clientes</span>
+                </div>
+                <button
+                  onClick={() => refetch()}
+                  className="w-full px-4 py-2 text-sm text-blue-900 hover:bg-blue-50 rounded-md"
+                >
+                  Tentar novamente
+                </button>
+              </div>
             ) : filteredClients.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">Nenhum cliente encontrado</div>
+              <div className="p-4 text-center text-gray-500">
+                {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
+              </div>
             ) : (
               <div className="py-2">
                 {filteredClients.map((client) => (
