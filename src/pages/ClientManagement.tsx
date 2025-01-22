@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, UserPlus, Search, Edit2, Trash2, X } from 'lucide-react';
 import { useNavigate } from '../hooks/useNavigate';
-import { useAuth } from '../contexts/AuthContext';
 import { useClient } from '../contexts/ClientContext';
 import { supabase } from '../lib/supabase';
 import { Client } from '../types/client';
+import { useAuthStore } from '../lib/store';
 
 export function ClientManagement() {
   const { goToDashboard } = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const { setSelectedClient } = useClient();
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -393,8 +393,8 @@ export function ClientManagement() {
                       </tr>
                     ) : (
                       filteredClients.map((client) => (
-                        <tr 
-                          key={client.id} 
+                        <tr
+                          key={client.id}
                           className="hover:bg-gray-50 cursor-pointer"
                           onClick={() => handleRowClick(client)}
                         >

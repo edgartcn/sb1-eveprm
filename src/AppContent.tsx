@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth } from './contexts/AuthContext';
+import { useAuthStore } from './lib/store';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { CnisAnalysis } from './pages/CnisAnalysis';
@@ -10,7 +10,7 @@ import { ClientManagement } from './pages/ClientManagement';
 import { AppPage } from './hooks/useNavigate';
 
 export function AppContent() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuthStore();
   const [currentPage, setCurrentPage] = useState<AppPage>('dashboard');
 
   useEffect(() => {

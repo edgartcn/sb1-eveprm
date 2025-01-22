@@ -1,8 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from './supabase';
-import { Client } from '../types/client';
+import { supabase } from '../supabase';
+import { Client } from '../../types/client';
 
-// Clients queries
 export const useClients = () => {
   return useQuery({
     queryKey: ['clients'],

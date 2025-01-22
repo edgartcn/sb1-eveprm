@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, User, Search, AlertCircle } from 'lucide-react';
 import { useClientStore } from '../lib/store';
-import { useClients } from '../lib/queries';
+import { useClients } from '../lib/queries/clients';
 
 export function ClientSwitcher() {
   const { selectedClient, setSelectedClient } = useClientStore();
@@ -88,9 +88,8 @@ export function ClientSwitcher() {
                       setSelectedClient(client);
                       setIsOpen(false);
                     }}
-                    className={`w-full px-4 py-2 text-left hover:bg-gray-100 ${
-                      selectedClient?.id === client.id ? 'bg-blue-50' : ''
-                    }`}
+                    className={`w-full px-4 py-2 text-left hover:bg-gray-100 ${selectedClient?.id === client.id ? 'bg-blue-50' : ''
+                      }`}
                   >
                     <div className="text-sm font-medium text-gray-900">{client.name}</div>
                     {client.cpf && (

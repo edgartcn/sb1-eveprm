@@ -1,13 +1,13 @@
-import React from 'react';
-import { FileText, Users, FileSpreadsheet, FileCheck, BarChart2, UserPlus } from 'lucide-react';
+import { FileText, Users, FileSpreadsheet, BarChart2, UserPlus } from 'lucide-react';
 import { DashboardCard } from '../components/DashboardCard';
-import { useAuth } from '../contexts/AuthContext';
-import { useClient } from '../contexts/ClientContext';
 import { useNavigate } from '../hooks/useNavigate';
 import { ClientSwitcher } from '../components/ClientSwitcher';
+import { useAuthStore } from '../lib/store';
+import { useLogoutMutation } from '../lib/queries/users';
 
 export function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user } = useAuthStore();
+  const { mutate: logoutMutation } = useLogoutMutation();
   const { goToCnisAnalysis, goToPetitionEditor, goToRuralAnalysis, goToAnalysisDashboard, goToClientManagement } = useNavigate();
 
   return (
@@ -17,7 +17,7 @@ export function Dashboard() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold">ePREV</h1>
-              <p className="text-blue-200">Bem-vindo(a), {user?.name}</p>
+              <p className="text-blue-200">Olá, {user?.name}</p>
             </div>
             <div className="flex items-center space-x-4">
               <ClientSwitcher />
@@ -29,7 +29,7 @@ export function Dashboard() {
                 Análise Consolidada
               </button>
               <button
-                onClick={logout}
+                onClick={() => logoutMutation()}
                 className="px-4 py-2 bg-blue-800 rounded-md hover:bg-blue-700 transition-colors"
               >
                 Sair
