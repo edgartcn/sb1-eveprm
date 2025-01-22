@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { useRegisterMutation } from '../../lib/queries/users';
 
 interface RegisterFormProps {
   onSuccess: () => void;
@@ -11,39 +11,18 @@ export function RegisterForm({ onSuccess, onCancel }: RegisterFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+
+  const { mutateAsync: registerMutateAsync, isPending: registerIsPending } = useRegisterMutation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
 
     try {
-      // Sign up the user
-      const { data: authData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name, // Include name in the user metadata
-          },
-        },
-      });
-
-      if (signUpError) {
-        if (signUpError.message.includes('already registered')) {
-          throw new Error('Este email já está cadastrado');
-        }
-        throw signUpError;
-      }
-
-      if (!authData.user) throw new Error('Erro ao criar usuário');
-
+      await registerMutateAsync({ name, email, password });
       onSuccess();
-    } catch (err) {
+    } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erro ao criar conta');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -103,10 +82,10 @@ export function RegisterForm({ onSuccess, onCancel }: RegisterFormProps) {
         </button>
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={registerIsPending}
           className="px-4 py-2 bg-blue-900 text-white rounded-md hover:bg-blue-800 disabled:opacity-50"
         >
-          {isLoading ? 'Criando conta...' : 'Criar conta'}
+          {registerIsPending ? 'Criando conta...' : 'Criar conta'}
         </button>
       </div>
     </form>

@@ -21,6 +21,28 @@ export const useMeQuery = () => {
   });
 };
 
+export const useRegisterMutation = () => {
+  return useMutation({
+    mutationFn: async (credentials: { name: string, email: string, password: string }) => {
+      const splitName = credentials.name.split(' ');
+      const { data, error } = await supabase.auth.signUp({
+        email: credentials.email,
+        password: credentials.password,
+        options: {
+          data: {
+            first_name: splitName[0],
+            last_name: splitName.slice(1).join(' '),
+          },
+        },
+      });
+      if (error) {
+        throw error;
+      }
+      if (!data.user) throw new Error('Erro ao criar usuário');
+    }
+  })
+}
+
 export const useLoginMutation = () => {
   return useMutation({
     mutationFn: async (credentials: { email: string, password: string }) => {
